@@ -16,6 +16,7 @@ from selenium import webdriver
 import os
 import traceback
 import threading
+import time
 from threading import Thread
 
 #Declares class "Item" to help store and access information about
