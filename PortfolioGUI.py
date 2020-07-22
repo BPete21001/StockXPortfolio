@@ -17,6 +17,7 @@ import os
 import traceback
 import threading
 import time
+import pickle
 from threading import Thread
 
 #Declares class "Item" to help store and access information about
@@ -42,21 +43,23 @@ def updateThread(userInfo, updatingMark, needsUpdateMark, updateNumber):
 	
 		count = 0
 		updatingMark[0] = True
-
 		#create browser and hide off screen
-		driver = webdriver.Chrome()
+		options = webdriver.ChromeOptions()
+		options.add_argument('--enable-javascript')
+		options.add_argument("--disable-blink-features=AutomationControlled")
+		driver = webdriver.Chrome(options = options)
 		driver.set_window_position(-1000, -1000)
 		driverHidden = True
 		items = loadItems(userInfo)
 		for item in items:
 			updateNumber[0] += 1
+			temp = updateNumber[0]
 			oneSize = False
 			#attempt to access URL
 			try:
-				driver.get(item.url)
+				driver.get(item.url)	
 			except:
 				print("Invalid URL")
-				traceback.print_exc()
 				item.price = "Error"
 				break
 				#filter faulty URLs
@@ -65,23 +68,25 @@ def updateThread(userInfo, updatingMark, needsUpdateMark, updateNumber):
 				driver.quit()
 				item.price = "Error"
 				continue
-			#display window if captcha 
+			#display window if captcha and set update number to reflect captcha status
 			if("denied" in driver.title):
 				driver.set_window_position(0,0)
 				driverHidden = False
+				updateNumber[0] = "Captcha"
 
 			#wait until captcha is solved
 			while("denied" in driver.title):
-				time.sleep(1)
+				time.sleep(.3)
 				#filter faulty URLs
 			if(("404" in driver.current_url) or not("stockx.com" in driver.current_url)):
 				print("Invalid URL")
 				item.price = "Error"
 				continue
 
-				#hide window again
+				#hide window again and set update number back to item 
 			if(not driverHidden):
 				driver.set_window_position(-1000, -1000)
+				updateNumber[0] = temp
 				driverHidden = True
 
 				#initialize size and price arrays
@@ -126,6 +131,7 @@ def updateThread(userInfo, updatingMark, needsUpdateMark, updateNumber):
 						item.price = "None"	
 				else:
 					item.price = "None"
+
 			updateFileItems(userInfo, items)
 			
 		driver.quit()
@@ -280,7 +286,8 @@ def editWindow2(userInfo, count, items, needsUpdateMark):
 	window.configure(bg = grey)
 	Sizes = ["OneSize", "4", "4.5", "5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5",
 	"10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "15", "16", "17", 
-	"XS", "S", "M", "L", "XL", "3.5Y", "4Y", "4.5Y","5Y","5.5Y","6Y","6.5Y","7Y", 
+	"XS", "S", "M", "L", "XL", "5W", "5.5W", "6W", "6.5W", "7W", "7.5W", "8W", "8.5W", "9W", "9.5W", "10W", 
+	"10.5W", "11W", "11.5W", "12W","3.5Y", "4Y", "4.5Y","5Y","5.5Y","6Y","6.5Y","7Y", 
 	"2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "10.5C"]
 	
 	#declare a variable to read from combobox and set default value to current value
@@ -358,6 +365,8 @@ def updateToCanvas(canvas, updateNumber, length, count):
 	dots = ['.'] * (int(count/4)%4)
 	if(updateNumber[0] == 0):
 		canvas.create_text(150, 225, text = "Updating Item 1 of " + str(length) + str(" ".join(dots)), font = "candara 30 bold", anchor = "w", tag = 'update')
+	elif(updateNumber[0] == "Captcha"):
+		canvas.create_text(150, 225, text = "Waiting for Captcha" + str(" ".join(dots)), font = "candara 30 bold", anchor = "w", tag = 'update')
 	else:
 		canvas.create_text(150, 225, text = "Updating Item " + str(updateNumber[0]) + " of " + str(length)+ str(" ".join(dots)), font = "candara 30 bold", anchor = "w", tag = 'update')
 
@@ -474,7 +483,8 @@ def addWindow(userInfo, items, needsUpdateMark):
 	window.configure(bg = grey)
 	Sizes = ["OneSize", "4", "4.5", "5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5",
 	"10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "15", "16", "17", 
-	"XS", "S", "M", "L", "XL", "3.5Y", "4Y", "4.5Y","5Y","5.5Y","6Y","6.5Y","7Y", 
+	"XS", "S", "M", "L", "XL", "5W", "5.5W", "6W", "6.5W", "7W", "7.5W", "8W", "8.5W", "9W", "9.5W", "10W", 
+	"10.5W", "11W", "11.5W", "12W","3.5Y", "4Y", "4.5Y","5Y","5.5Y","6Y","6.5Y","7Y", 
 	"2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "10.5C"]
 	
 	#declare variable that reads from combobox
